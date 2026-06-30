@@ -4,6 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿A cuántos pasos estás de Messi? — Ally</title>
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ally-messi-quiz-production.up.railway.app/">
+<meta property="og:title" content="¿A cuántos pasos estás de Messi?">
+<meta property="og:description" content="Respondé 5 preguntas y descubrí cuán cerca estás de Messi. Armá tu red con Ally.">
+<meta property="og:image" content="https://ally-messi-quiz-production.up.railway.app/ally-og-image.png">
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="https://ally-messi-quiz-production.up.railway.app/">
+<meta property="twitter:title" content="¿A cuántos pasos estás de Messi?">
+<meta property="twitter:description" content="Respondé 5 preguntas y descubrí cuán cerca estás de Messi. Armá tu red con Ally.">
+<meta property="twitter:image" content="https://ally-messi-quiz-production.up.railway.app/ally-og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
@@ -88,6 +102,22 @@
   }
   .cta:hover{transform:translateY(-1px); box-shadow:0 18px 38px rgba(98,198,255,.36);}
   .cta:active{transform:translateY(0);}
+  .sendbtn{
+    margin-top:12px; width:100%; cursor:pointer; font-family:inherit;
+    background:linear-gradient(90deg,var(--celeste),var(--celeste-deep));
+    color:#04111f; border:0; border-radius:14px; padding:14px;
+    font-size:15px; font-weight:700; letter-spacing:.01em;
+    box-shadow:0 8px 20px rgba(98,198,255,.22);
+    transition:all .12s ease;
+  }
+  .sendbtn:disabled{
+    opacity:.4; cursor:not-allowed; box-shadow:none;
+  }
+  .sendbtn:not(:disabled):hover{transform:translateY(-1px); box-shadow:0 12px 28px rgba(98,198,255,.32);}
+  .sendbtn:not(:disabled):active{transform:translateY(0);}
+  .sendbtn.sent{
+    background:var(--good); box-shadow:0 8px 20px rgba(95,224,168,.28);
+  }
   .cta.gold{background:linear-gradient(90deg,var(--celeste),var(--celeste-deep)); box-shadow:0 14px 30px rgba(13,130,220,.30); color:#04121f;}
   .cta:disabled{opacity:.45; cursor:not-allowed; box-shadow:none;}
 
@@ -182,7 +212,8 @@
       <!-- contact + download, together on the same board -->
       <div class="finalcta">
         <p class="lead" style="margin-bottom:2px">Dejá tu contacto (te mandamos tu resultado) y descargá Ally:</p>
-        <input class="field" id="lead-input" type="text" inputmode="email" placeholder="Teléfono o email — vos elegís" oninput="checkLead()">
+        <input class="field" id="lead-input" type="text" inputmode="email" placeholder="Teléfono o email — vos elegís" oninput="checkLeadInput()">
+        <button class="sendbtn" id="sendbtn" onclick="sendResult()" disabled>Enviar mi resultado →</button>
 
         <div class="refbox">
           <div class="refinfo">
@@ -293,13 +324,37 @@
     else { progressStep = STEPS_TOTAL; setBar(); show("s-final"); showFinal(); }
   }
 
-  function checkLead(){
+  let leadSaved = false;
+
+  function checkLeadInput(){
     const v = $("lead-input").value.trim();
     const ok = /\S+@\S+\.\S+/.test(v) || /\d{6,}/.test(v.replace(/\D/g,""));
-    $("sent-line").textContent = ok
-      ? "📩 Te mandamos tu resultado a " + v
-      : "Sin spam. Solo tu resultado y tu acceso a Ally.";
-    if (ok) saveLead();
+    $("sendbtn").disabled = !ok;
+    if (!leadSaved) {
+      $("sent-line").textContent = "Sin spam. Solo tu resultado y tu acceso a Ally.";
+    }
+  }
+
+  async function sendResult(){
+    const btn = $("sendbtn");
+    const contact = $("lead-input").value.trim();
+    if (!contact) return;
+
+    btn.disabled = true;
+    btn.textContent = "Enviando...";
+
+    const success = await saveLead();
+
+    if (success) {
+      leadSaved = true;
+      btn.textContent = "✓ Enviado";
+      btn.classList.add("sent");
+      $("sent-line").textContent = "✓ Te enviamos tu resultado a " + contact;
+    } else {
+      btn.disabled = false;
+      btn.textContent = "Enviar mi resultado →";
+      $("sent-line").textContent = "Error al enviar. Intentá de nuevo.";
+    }
   }
 
   // Illustrative teaser number, biased by their answers (prototype only — real number comes from the graph in-app)
@@ -326,9 +381,17 @@
     const t = setInterval(()=>{ cur--; el.textContent = cur; if(cur<=target) clearInterval(t); }, 80);
   }
 
-  function downloadApp(){
+  async function downloadApp(){
     const lead = $("lead-input").value.trim();
-    if (lead) saveLead();
+    if (lead && !leadSaved) {
+      await saveLead();
+      leadSaved = true;
+      const btn = $("sendbtn");
+      btn.textContent = "✓ Enviado";
+      btn.classList.add("sent");
+      btn.disabled = true;
+      $("sent-line").textContent = "✓ Te enviamos tu resultado a " + lead;
+    }
     window.open(APP_URL, "_blank");
   }
 
@@ -342,8 +405,8 @@
 
   async function saveLead(){
     const contact = $("lead-input").value.trim();
-    if (!contact) return;
-    
+    if (!contact) return false;
+
     const payload = {
       contact,
       contact_type: /\S+@\S+\.\S+/.test(contact) ? "email" : "phone",
@@ -355,7 +418,7 @@
       degree_estimate: parseInt($("num").textContent) || null,
       referral_code: REF_CODE
     };
-    
+
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/quiz_leads`, {
         method: "POST",
@@ -366,9 +429,17 @@
         },
         body: JSON.stringify(payload)
       });
-      if (res.ok) console.log("✓ Lead saved");
-      else console.log("❌ Save failed:", res.status);
-    } catch (e) { console.log("❌ Error:", e.message); }
+      if (res.ok) {
+        console.log("✓ Lead saved");
+        return true;
+      } else {
+        console.log("❌ Save failed:", res.status);
+        return false;
+      }
+    } catch (e) {
+      console.log("❌ Error:", e.message);
+      return false;
+    }
   }
 
   function restart(){

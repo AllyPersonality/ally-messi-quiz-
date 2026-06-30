@@ -31,6 +31,11 @@ const CACHE_TTL = 30000; // 30 seconds
 app.use(express.json());
 app.use(express.static('public'));
 
+// Serve OG image
+app.get('/ally-og-image.png', (req, res) => {
+  res.sendFile(join(__dirname, 'ally-og-image.png'));
+});
+
 // Basic auth for dashboard
 const dashboardAuth = basicAuth({
   users: {
