@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ally · Messi Quiz — Live Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0f1e; --ink-2:#121a30; --ink-3:#1b2540; --line:#2a3552;
+    --celeste:#19b0ec; --celeste-deep:#0d82dc; --gold:#34c4ff; --pop:#34c4ff;
+    --paper:#eaf1ff; --muted:#8a97b8; --good:#5fe0a8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 80% -10%, rgba(98,198,255,.12), transparent 60%), var(--ink);
+    color:var(--paper); font-family:"Archivo",system-ui,sans-serif; min-height:100vh; padding:22px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .container{max-width:1400px; margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+  .logo{font:700 18px/1 "Anton",sans-serif;letter-spacing:.3px;color:var(--celeste)}
+  .status{font-size:13px;color:var(--muted)}
+  #errbox{background:rgba(255,60,60,.08);border:1px solid rgba(255,60,60,.25);border-radius:8px;padding:12px 14px;color:#ff9999;font-size:13px;display:none;margin-bottom:20px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+  .kpi{background:var(--ink-2);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+  .kpi-val{font-size:28px;font-weight:700;color:var(--paper)}
+  .kpi-sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .section{background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:20px 24px;margin-bottom:16px}
+  h2{font-size:15px;font-weight:600;letter-spacing:.4px;color:var(--paper);margin-bottom:16px}
+  .days{display:flex;justify-content:space-between;gap:6px}
+  .day{flex:1;text-align:center}
+  .day .col{background:var(--celeste);border-radius:3px 3px 0 0;height:0;min-height:3px;margin-bottom:6px;transition:height .3s}
+  .day small{display:block;font-size:9px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .bars{display:flex;flex-direction:column;gap:10px}
+  .brow{display:flex;align-items:center;gap:10px}
+  .bn{font-size:13px;min-width:80px;color:var(--paper)}
+  .btrack{flex:1;height:22px;background:var(--ink-3);border-radius:4px;overflow:hidden;position:relative}
+  .btrack i{display:block;height:100%;background:linear-gradient(90deg, var(--celeste), var(--celeste-deep));border-radius:4px;transition:width .4s}
+  .bv{font-size:13px;font-weight:600;color:var(--paper);min-width:42px;text-align:right}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead{background:var(--ink-3)}
+  th{text-align:left;padding:10px 12px;font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--line)}
+  td{padding:10px 12px;border-bottom:1px solid rgba(42,53,82,.3)}
+  td.contact{font-weight:600;color:var(--celeste)}
+  .pill{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+  .pill.email{background:rgba(52,196,255,.15);color:var(--celeste)}
+  .pill.phone{background:rgba(95,224,168,.15);color:var(--good)}
+  .pill.ref{background:rgba(255,200,100,.12);color:#ffda80}
+  .btn-delete{background:rgba(255,60,60,.1);border:1px solid rgba(255,60,60,.3);color:#ff9999;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-weight:500;transition:all .2s}
+  .btn-delete:hover{background:rgba(255,60,60,.2);border-color:rgba(255,60,60,.5)}
+  .btn-delete:disabled{opacity:.5;cursor:not-allowed}
+  @media(max-width:680px){.kpis{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">ALLY</div>
+    <div class="status"><span id="updated">Loading…</span></div>
+  </header>
+
+  <div id="errbox"></div>
+
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-label">Total Leads</div>
+      <div class="kpi-val" id="k-leads">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Email</div>
+      <div class="kpi-val" id="k-email">—</div>
+      <div class="kpi-sub" id="k-email-pct">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Phone</div>
+      <div class="kpi-val" id="k-phone">—</div>
+      <div class="kpi-sub" id="k-phone-pct">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Today</div>
+      <div class="kpi-val" id="k-today">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Referral ABOFRC</div>
+      <div class="kpi-val" id="k-ref">—</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Daily Leads (Last 14 Days)</h2>
+    <div class="days" id="days"></div>
+  </div>
+
+  <div class="section">
+    <h2>Contact Type</h2>
+    <div class="bars" id="contact-bars"></div>
+  </div>
+
+  <div class="section">
+    <h2>Dream / Aspiration</h2>
+    <div class="bars" id="dream-bars"></div>
+  </div>
+
+  <div class="section">
+    <h2>Goal</h2>
+    <div class="bars" id="goal-bars"></div>
+  </div>
+
+  <div class="section">
+    <h2>Industry</h2>
+    <div class="bars" id="industry-bars"></div>
+  </div>
+
+  <div class="section">
+    <h2>Latest Leads · <span id="leads-count" class="muted">—</span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Contact</th>
+          <th>Type</th>
+          <th>Goal</th>
+          <th>Industry</th>
+          <th>Club</th>
+          <th>Ref</th>
+          <th>When</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="leads-body">
+        <tr><td colspan="8" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const LABELS = {
+    goal:     {job:"Job hunting", sales:"Sales / clients", hiring:"Hiring", social:"Meet people"},
+    industry: {tech:"Tech", biz:"Business", creative:"Creative", trade:"Trades", student:"Student"},
+    club:     {boca:"Boca", river:"River", otro:"Other", none:"Not football"},
+    dream:    {messi:"Messi", founder:"CEO / founder", athlete:"Athlete", artist:"Artist"},
+    contact_type:{email:"Email", phone:"Phone"}
+  };
+
+  function pct(n,total){ return total? Math.round(n/total*100) : 0; }
+  function esc(s){ return (s||"").replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  function timeAgo(iso){
+    const d = (Date.now() - new Date(iso).getTime())/1000;
+    if(d<60) return "just now";
+    if(d<3600) return Math.floor(d/60) + " min ago";
+    if(d<86400) return Math.floor(d/3600) + " h ago";
+    return Math.floor(d/86400) + " d ago";
+  }
+
+  function bars(containerId, counts, labelMap, color){
+    const total = Object.values(counts).reduce((a,b)=>a+b,0);
+    const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    const el = document.getElementById(containerId);
+    if(!entries.length){ el.innerHTML = '<p class="muted" style="font-size:13px">No data yet.</p>'; return; }
+    el.innerHTML = entries.map(([k,v])=>{
+      const p = pct(v,total);
+      const name = (labelMap && labelMap[k]) || k || "—";
+      return '<div class="brow"><span class="bn">'+esc(name)+'</span><div class="btrack"><i style="width:'+p+'%"></i></div><span class="bv">'+p+'%</span></div>';
+    }).join("");
+  }
+
+  function renderDays(daily){
+    const entries = Object.entries(daily).sort((a,b)=>a[0].localeCompare(b[0]));
+    const vals = entries.map(e=>e[1]);
+    const max = Math.max(1, ...vals);
+    document.getElementById("days").innerHTML = vals.map((v,i)=>{
+      const lab = i===vals.length-1 ? "Hoy" : (i%2===0 ? (14-i)+"d" : "");
+      return '<div class="day" title="'+v+' leads"><div class="col" style="height:'+Math.round(v/max*100)+'%"></div><small>'+lab+'</small></div>';
+    }).join("");
+  }
+
+  async function load(){
+    try{
+      const res = await fetch('/api/quiz-analytics');
+      if(!res.ok){ throw new Error("API returned " + res.status); }
+      const data = await res.json();
+      document.getElementById("errbox").style.display = "none";
+      render(data);
+      document.getElementById("updated").textContent = "Updated " + new Date().toLocaleTimeString();
+    }catch(e){
+      const box = document.getElementById("errbox");
+      box.style.display = "block";
+      box.textContent = "⚠️ " + e.message;
+      document.getElementById("updated").textContent = "Error";
+    }
+  }
+
+  async function deleteLead(id) {
+    if(!confirm('Delete this lead? This cannot be undone.')) return;
+
+    const btn = document.querySelector(`[data-id="${id}"]`);
+    if(btn) btn.disabled = true;
+
+    try {
+      const res = await fetch(`/api/quiz-leads/${id}`, {
+        method: 'DELETE'
+      });
+
+      if(!res.ok) throw new Error('Delete failed');
+
+      // Reload data immediately
+      await load();
+    } catch(e) {
+      alert('Failed to delete lead: ' + e.message);
+      if(btn) btn.disabled = false;
+    }
+  }
+
+  function render(data){
+    const {totals, daily, segments, latest} = data;
+
+    document.getElementById("k-leads").textContent = totals.leads.toLocaleString();
+    document.getElementById("k-email").textContent = totals.email.toLocaleString();
+    document.getElementById("k-email-pct").textContent = pct(totals.email,totals.leads)+"% de los leads";
+    document.getElementById("k-phone").textContent = totals.phone.toLocaleString();
+    document.getElementById("k-phone-pct").textContent = pct(totals.phone,totals.leads)+"% de los leads";
+    document.getElementById("k-today").textContent = totals.today.toLocaleString();
+    document.getElementById("k-ref").textContent = totals.referrals.toLocaleString();
+
+    renderDays(daily);
+    bars("contact-bars", segments.contact_type, LABELS.contact_type);
+    bars("dream-bars", segments.dream, LABELS.dream);
+    bars("goal-bars", segments.goal, LABELS.goal);
+    bars("industry-bars", segments.industry, LABELS.industry);
+
+    document.getElementById("leads-count").textContent = totals.leads + " total · exportable to CSV";
+    const body = document.getElementById("leads-body");
+    if(!latest.length){ body.innerHTML = '<tr><td colspan="8" class="muted">No leads yet. Share the quiz link to start collecting.</td></tr>'; return; }
+    body.innerHTML = latest.map(r=>{
+      const type = r.contact_type==="email"
+        ? '<span class="pill email">email</span>'
+        : '<span class="pill phone">phone</span>';
+      const ref = r.referral_code ? '<span class="pill ref">'+esc(r.referral_code)+'</span>' : '<span class="muted">—</span>';
+      const g = (LABELS.goal[r.goal])||'<span class="muted">—</span>';
+      const ind = (LABELS.industry[r.industry])||'<span class="muted">—</span>';
+      const club = (LABELS.club[r.club])||'—';
+      return '<tr><td class="contact">'+esc(r.contact||'—')+'</td><td>'+type+'</td><td>'+g+'</td><td>'+ind+'</td><td class="muted">'+esc(club)+'</td><td>'+ref+'</td><td class="muted">'+timeAgo(r.created_at)+'</td><td><button class="btn-delete" data-id="'+r.id+'" onclick="deleteLead('+r.id+')">Delete</button></td></tr>';
+    }).join("");
+  }
+
+  load();
+  setInterval(load, 30000);
+</script>
+</body>
+</html>
