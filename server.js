@@ -193,13 +193,20 @@ app.get('/dashboard', dashboardAuth, (req, res) => {
 
 // Save lead endpoint (called from quiz)
 app.post('/api/lead', async (req, res) => {
+  console.log('📥 POST /api/lead - Request received');
+  console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+
   try {
     const { contact, contact_type, goal, industry, club, behavior, dream, degree_estimate, referral_code } = req.body;
 
     // Validate required fields
     if (!contact || !contact_type) {
+      console.log('❌ Validation failed: missing contact or contact_type');
       return res.status(400).json({ error: 'Contact and contact_type are required' });
     }
+
+    console.log('✅ Validation passed');
+    console.log('💾 Inserting into Supabase quiz_leads table...');
 
     const { data, error } = await supabase
       .from('quiz_leads')
@@ -217,17 +224,22 @@ app.post('/api/lead', async (req, res) => {
       .select();
 
     if (error) {
-      console.error('Supabase insert error:', error);
-      return res.status(500).json({ error: 'Failed to save lead' });
+      console.error('❌ Supabase insert error:', error);
+      return res.status(500).json({ error: 'Failed to save lead', details: error });
     }
+
+    console.log('✅ Lead saved to Supabase!');
+    console.log('📊 Inserted data:', data);
 
     // Clear cache so dashboard gets updated data
     analyticsCache = null;
+    console.log('🔄 Analytics cache cleared');
 
     res.json({ success: true, data });
+    console.log('✅ Response sent to client');
   } catch (err) {
-    console.error('Server error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Server error:', err);
+    res.status(500).json({ error: 'Internal server error', message: err.message });
   }
 });
 

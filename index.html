@@ -347,9 +347,13 @@
 
   function pick(tag, val){
     answers[tag] = val;
+    console.log(`✓ Answer saved: ${tag} = ${val}`, answers);
     progressStep = qi + 1; setBar();
     if (qi < QUESTIONS.length - 1){ qi++; setTimeout(()=>{ renderQ(); }, 120); }
-    else { progressStep = STEPS_TOTAL; setBar(); show("s-final"); showFinal(); }
+    else {
+      console.log('📊 Quiz complete! Final answers:', answers);
+      progressStep = STEPS_TOTAL; setBar(); show("s-final"); showFinal();
+    }
   }
 
   let leadSaved = false;
@@ -364,24 +368,32 @@
   }
 
   async function sendResult(){
+    console.log('🚀 sendResult() called');
     const btn = $("sendbtn");
     const contact = $("lead-input").value.trim();
-    if (!contact) return;
+    if (!contact) {
+      console.log('❌ No contact provided');
+      return;
+    }
 
+    console.log('📧 Contact:', contact);
     btn.disabled = true;
     btn.textContent = "Enviando...";
 
     const success = await saveLead();
+    console.log('💾 saveLead() result:', success);
 
     if (success) {
       leadSaved = true;
       btn.textContent = "✓ Enviado";
       btn.classList.add("sent");
       $("sent-line").textContent = "✓ Te enviamos tu resultado a " + contact;
+      console.log('✅ Lead saved successfully');
     } else {
       btn.disabled = false;
       btn.textContent = "Enviar mi resultado →";
       $("sent-line").textContent = "Error al enviar. Intentá de nuevo.";
+      console.log('❌ Lead save failed');
     }
   }
 
@@ -432,8 +444,12 @@
   }
 
   async function saveLead(){
+    console.log('💾 saveLead() started');
     const contact = $("lead-input").value.trim();
-    if (!contact) return false;
+    if (!contact) {
+      console.log('❌ No contact in saveLead');
+      return false;
+    }
 
     const payload = {
       contact,
@@ -447,7 +463,10 @@
       referral_code: REF_CODE
     };
 
+    console.log('📦 Payload to send:', JSON.stringify(payload, null, 2));
+
     try {
+      console.log('🌐 Sending POST to /api/lead...');
       const res = await fetch('/api/lead', {
         method: "POST",
         headers: {
@@ -455,15 +474,19 @@
         },
         body: JSON.stringify(payload)
       });
+      console.log('📡 Response status:', res.status, res.statusText);
+
       if (res.ok) {
-        console.log("✓ Lead saved");
+        const data = await res.json();
+        console.log("✅ Lead saved! Response:", data);
         return true;
       } else {
-        console.log("❌ Save failed:", res.status);
+        const errorData = await res.json().catch(() => ({}));
+        console.log("❌ Save failed:", res.status, errorData);
         return false;
       }
     } catch (e) {
-      console.log("❌ Error:", e.message);
+      console.log("❌ Network Error:", e.message, e);
       return false;
     }
   }
