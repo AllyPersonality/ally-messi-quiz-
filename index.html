@@ -47,6 +47,29 @@
     display:flex; align-items:center; justify-content:center;
     min-height:100%; padding:20px;
     -webkit-font-smoothing:antialiased;
+    position:relative;
+    overflow:hidden;
+  }
+  /* animated football background */
+  body::before{
+    content:"";
+    position:fixed;
+    width:120px;
+    height:120px;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g1" cx="35%" cy="35%"><stop offset="0%" style="stop-color:%23ffffff;stop-opacity:0.3"/><stop offset="100%" style="stop-color:%23000000;stop-opacity:0.5"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(%23g1)" stroke="%23333" stroke-width="1"/><path d="M50 10 L60 35 L85 35 L65 50 L75 75 L50 60 L25 75 L35 50 L15 35 L40 35 Z" fill="%23ffffff" opacity="0.85"/><path d="M50 10 L40 35 M60 35 L85 35 M85 35 L65 50 M65 50 L75 75 M75 75 L50 60 M50 60 L25 75 M25 75 L35 50 M35 50 L15 35 M15 35 L40 35 M40 35 L50 10" stroke="%23000" stroke-width="1.5" fill="none" opacity="0.3"/></svg>');
+    background-size:contain;
+    background-repeat:no-repeat;
+    opacity:0.06;
+    z-index:0;
+    pointer-events:none;
+    animation:rollBall 25s linear infinite;
+  }
+  @keyframes rollBall{
+    0%{ transform:translate(-60px, -60px) rotate(0deg); }
+    25%{ transform:translate(calc(100vw - 60px), 30vh) rotate(360deg); }
+    50%{ transform:translate(calc(100vw - 40px), calc(100vh - 40px)) rotate(720deg); }
+    75%{ transform:translate(20vw, calc(100vh - 80px)) rotate(1080deg); }
+    100%{ transform:translate(-60px, -60px) rotate(1440deg); }
   }
   .app{
     width:100%; max-width:440px;
@@ -56,6 +79,7 @@
     box-shadow:0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
     overflow:hidden;
     position:relative;
+    z-index:1;
   }
   /* progress */
   .bar{height:4px; background:var(--ink-3);}
@@ -138,9 +162,12 @@
 
   .bignum{font-family:"Anton"; font-size:96px; line-height:.85; color:var(--pop); text-align:center; margin:8px 0 2px; text-shadow:0 0 44px rgba(52,196,255,.4);}
   .bignum small{display:block; font-family:"Archivo"; font-size:13px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); font-weight:700; text-shadow:none; margin-top:6px;}
-  .card-soft{background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:18px;}
-  .card-soft p{font-size:14px; color:var(--paper); line-height:1.5;}
+  .card-soft{background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:18px; overflow:visible;}
+  .card-soft p{font-size:14px; color:var(--paper); line-height:1.5; margin:0;}
   .card-soft .tag{color:var(--celeste); font-weight:700;}
+  .how-to-close{background:rgba(52,196,255,.06); border:1px solid var(--celeste-deep); border-radius:14px; padding:16px; margin-top:14px;}
+  .how-to-close p{font-size:14px; color:var(--paper); line-height:1.55; margin:0;}
+  .how-to-close strong{color:var(--celeste); font-weight:700;}
   .steps3{display:flex; flex-direction:column; gap:12px; margin-top:18px;}
   .s3{display:flex; gap:12px; align-items:flex-start;}
   .s3 .n{flex:0 0 auto; width:26px;height:26px;border-radius:50%; background:var(--ink-3); border:1px solid var(--line); color:var(--celeste); font-weight:800; font-size:13px; display:flex;align-items:center;justify-content:center;}
@@ -203,6 +230,11 @@
       <div class="card-soft">
         <p>Ojo: este número es un <b>estimado</b>. Tu red todavía está vacía, así que el camino real aún no existe. <span class="tag" id="seg-line"></span></p>
       </div>
+
+      <div class="how-to-close">
+        <p><strong>¿Cómo cerrás la brecha con Messi?</strong> Encontrás a estas personas construyendo tu red real en Ally. Descargá la app, registrate con el código <strong>ABOFRC</strong>, y sumá a la gente que conocés. Cada conexión abre nuevos caminos hacia quién quieras conocer.</p>
+      </div>
+
       <div class="steps3">
         <div class="s3"><div class="n">1</div><div><b>Descargá Ally y registrate</b><p>Tu red empieza con vos.</p></div></div>
         <div class="s3"><div class="n">2</div><div><b>Poné tu código de referido</b><p>Desbloqueás tu red real y arrancás más cerca.</p></div></div>
@@ -211,7 +243,7 @@
 
       <!-- contact + download, together on the same board -->
       <div class="finalcta">
-        <p class="lead" style="margin-bottom:2px">Dejá tu contacto (te mandamos tu resultado) y descargá Ally:</p>
+        <p class="lead" style="margin-bottom:2px">Dejá tu email y te mandamos más info sobre vos y tus posibilidades de conexión:</p>
         <input class="field" id="lead-input" type="text" inputmode="email" placeholder="Teléfono o email — vos elegís" oninput="checkLeadInput()">
         <button class="sendbtn" id="sendbtn" onclick="sendResult()" disabled>Enviar mi resultado →</button>
 
