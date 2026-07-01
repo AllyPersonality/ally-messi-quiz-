@@ -49,6 +49,10 @@ const dashboardAuth = basicAuth({
 app.get('/quiz', (req, res) => {
   try {
     const html = readFileSync(join(__dirname, 'index.html'), 'utf-8');
+    // Disable caching to ensure users always get latest version
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.send(html);
   } catch (err) {
     res.status(500).send('Error loading quiz');
@@ -59,6 +63,10 @@ app.get('/quiz', (req, res) => {
 app.get('/', (req, res) => {
   try {
     const html = readFileSync(join(__dirname, 'index.html'), 'utf-8');
+    // Disable caching to ensure users always get latest version
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.send(html);
   } catch (err) {
     res.status(500).send('Error loading quiz');
