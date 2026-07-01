@@ -243,6 +243,13 @@ app.post('/api/lead', async (req, res) => {
   }
 });
 
+// Simple event tracking endpoint
+app.post('/api/track', (req, res) => {
+  const { event, data } = req.body;
+  console.log(`📊 ANALYTICS: ${event}`, data || '');
+  res.json({ tracked: true });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

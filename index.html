@@ -331,7 +331,10 @@
   function show(id){ document.querySelectorAll(".step").forEach(s=>s.classList.remove("on")); $(id).classList.add("on"); window.scrollTo({top:0}); }
   function setBar(){ $("bar").style.width = Math.round((progressStep/STEPS_TOTAL)*100) + "%"; }
 
-  function next(){ progressStep=1; setBar(); qi=0; renderQ(); show("s-q"); }
+  function next(){
+    console.log('🎯 User started quiz');
+    progressStep=1; setBar(); qi=0; renderQ(); show("s-q");
+  }
 
   function renderQ(){
     const item = QUESTIONS[qi];
@@ -362,6 +365,11 @@
     const v = $("lead-input").value.trim();
     const ok = /\S+@\S+\.\S+/.test(v) || /\d{6,}/.test(v.replace(/\D/g,""));
     $("sendbtn").disabled = !ok;
+    if (v && !ok) {
+      console.log('⚠️  Invalid contact format:', v);
+    } else if (ok) {
+      console.log('✅ Valid contact entered, button enabled');
+    }
     if (!leadSaved) {
       $("sent-line").textContent = "Sin spam. Solo tu resultado y tu acceso a Ally.";
     }
@@ -414,6 +422,7 @@
   };
 
   function showFinal(){
+    console.log('🏁 User reached final screen');
     const n = teaserNumber();
     $("seg-line").textContent = SEG_COPY[answers.goal] || SEG_COPY.social;
     // count-up animation in place
