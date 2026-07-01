@@ -323,10 +323,6 @@
   const answers = {};           // segment tags collected here
   const APP_URL = "https://play.google.com/store/apps/details?id=com.myapp.ally&hl=en";
   const REF_CODE = "ABOFRC";
-  
-  // ---- Supabase config ----
-  const SUPABASE_URL = "https://ilfyhizblpmjzccrigez.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsZnloaXpibHBtanpjY3JpZ2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNjU5MTQsImV4cCI6MjA5NTk0MTkxNH0.t0clL-mWnLBB0lbXhxRQTLmB2nyCSB33fDjFS-J7wMg";
   let qi = 0;                   // current question index
   const STEPS_TOTAL = QUESTIONS.length + 1; // questions + one final board
   let progressStep = 0;
@@ -452,12 +448,10 @@
     };
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/quiz_leads`, {
+      const res = await fetch('/api/lead', {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-          "apikey": SUPABASE_KEY
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(payload)
       });

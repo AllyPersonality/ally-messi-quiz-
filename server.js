@@ -191,6 +191,46 @@ app.get('/dashboard', dashboardAuth, (req, res) => {
   }
 });
 
+// Save lead endpoint (called from quiz)
+app.post('/api/lead', async (req, res) => {
+  try {
+    const { contact, contact_type, goal, industry, club, behavior, dream, degree_estimate, referral_code } = req.body;
+
+    // Validate required fields
+    if (!contact || !contact_type) {
+      return res.status(400).json({ error: 'Contact and contact_type are required' });
+    }
+
+    const { data, error } = await supabase
+      .from('quiz_leads')
+      .insert([{
+        contact,
+        contact_type,
+        goal,
+        industry,
+        club,
+        behavior,
+        dream,
+        degree_estimate,
+        referral_code
+      }])
+      .select();
+
+    if (error) {
+      console.error('Supabase insert error:', error);
+      return res.status(500).json({ error: 'Failed to save lead' });
+    }
+
+    // Clear cache so dashboard gets updated data
+    analyticsCache = null;
+
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
