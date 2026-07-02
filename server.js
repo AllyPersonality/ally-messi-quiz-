@@ -199,6 +199,88 @@ app.get('/dashboard', dashboardAuth, (req, res) => {
   }
 });
 
+// Create initial session (progressive tracking)
+app.post('/api/session', async (req, res) => {
+  console.log('📝 POST /api/session - New session started');
+
+  try {
+    const { session_id, started_at, last_question_reached, completed, q1, q2, q3, q4, q5, archetype_scores, archetype, archetype_confidence, prob_trail, referral } = req.body;
+
+    const { data, error } = await supabase
+      .from('quiz_leads')
+      .insert([{
+        session_id,
+        started_at,
+        last_question_reached,
+        completed,
+        q1, q2, q3, q4, q5,
+        archetype_scores,
+        archetype,
+        archetype_confidence,
+        prob_trail,
+        referral,
+        contact: null,
+        contact_type: null
+      }])
+      .select();
+
+    if (error) {
+      console.error('❌ Session creation error:', error);
+      return res.status(500).json({ error: 'Failed to create session' });
+    }
+
+    console.log('✅ Session created:', data[0].id);
+    res.json({ success: true, id: data[0].id });
+  } catch (err) {
+    console.error('❌ Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update session progress
+app.patch('/api/session', async (req, res) => {
+  console.log('📊 PATCH /api/session - Updating progress');
+
+  try {
+    const { id, last_question_reached, q1, q2, q3, q4, q5, archetype_scores, archetype, archetype_confidence, prob_trail, cta_variant, completed, messi_steps } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Session ID required' });
+    }
+
+    const updateData = {};
+    if (last_question_reached !== undefined) updateData.last_question_reached = last_question_reached;
+    if (q1 !== undefined) updateData.q1 = q1;
+    if (q2 !== undefined) updateData.q2 = q2;
+    if (q3 !== undefined) updateData.q3 = q3;
+    if (q4 !== undefined) updateData.q4 = q4;
+    if (q5 !== undefined) updateData.q5 = q5;
+    if (archetype_scores !== undefined) updateData.archetype_scores = archetype_scores;
+    if (archetype !== undefined) updateData.archetype = archetype;
+    if (archetype_confidence !== undefined) updateData.archetype_confidence = archetype_confidence;
+    if (prob_trail !== undefined) updateData.prob_trail = prob_trail;
+    if (cta_variant !== undefined) updateData.cta_variant = cta_variant;
+    if (completed !== undefined) updateData.completed = completed;
+    if (messi_steps !== undefined) updateData.messi_steps = messi_steps;
+
+    const { error } = await supabase
+      .from('quiz_leads')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      console.error('❌ Session update error:', error);
+      return res.status(500).json({ error: 'Failed to update session' });
+    }
+
+    console.log('✅ Session updated:', id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Save lead endpoint (called from quiz)
 app.post('/api/lead', async (req, res) => {
   console.log('📥 POST /api/lead - Request received');
@@ -206,6 +288,7 @@ app.post('/api/lead', async (req, res) => {
 
   try {
     const {
+      id, // Session ID if exists
       contact, contact_type,
       goal, industry, club, behavior, dream, degree_estimate, referral_code,
       // New archetype fields (§6)
@@ -223,7 +306,34 @@ app.post('/api/lead', async (req, res) => {
 
     console.log('✅ Validation passed');
     console.log(`🎯 Archetype: ${archetype} (${(archetype_confidence*100).toFixed(1)}%)`);
-    console.log('💾 Inserting into Supabase quiz_leads table...');
+
+    // If we have a session ID, update the existing row
+    if (id) {
+      console.log('💾 Updating existing session with contact info...');
+
+      const { data, error } = await supabase
+        .from('quiz_leads')
+        .update({
+          contact,
+          contact_type,
+          downloaded: downloaded || false
+        })
+        .eq('id', id)
+        .select();
+
+      if (error) {
+        console.error('❌ Supabase update error:', error);
+        return res.status(500).json({ error: 'Failed to update lead', details: error });
+      }
+
+      console.log('✅ Lead updated!');
+      analyticsCache = null;
+      res.json({ success: true, data });
+      return;
+    }
+
+    // Otherwise create a new row (fallback for old behavior)
+    console.log('💾 Inserting new lead into Supabase...');
 
     const { data, error } = await supabase
       .from('quiz_leads')

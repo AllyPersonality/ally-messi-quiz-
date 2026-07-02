@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿A cuántos pasos estás de Messi? — Ally</title>
-<!-- VERSION: 2026-07-02-archetype-v4-COMPLETE - Result screen + database -->
+<!-- VERSION: 2026-07-02-archetype-v5 - Progressive tracking + drop-off analytics -->
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
@@ -563,6 +563,11 @@
   let prevLeader = null;        // track leader changes for stability rule
   let stageHistory = [];        // track stage progression for logging
 
+  // ---- Progressive tracking (capture ALL visitors + drop-offs) ----
+  let sessionId = null;         // unique ID for this session
+  let leadId = null;            // database row ID
+  let progressTracking = false; // flag to avoid duplicate writes
+
   const $ = id => document.getElementById(id);
   function show(id){ document.querySelectorAll(".step").forEach(s=>s.classList.remove("on")); $(id).classList.add("on"); window.scrollTo({top:0}); }
   function setBar(){ $("bar").style.width = Math.round((progressStep/STEPS_TOTAL)*100) + "%"; }
@@ -751,9 +756,98 @@
     return ctas[leader] || ctas.accelerator; // Default to accelerator if leader not found
   }
 
+  async function createSession() {
+    // Create initial session in database when quiz starts
+    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    const payload = {
+      session_id: sessionId,
+      started_at: new Date().toISOString(),
+      last_question_reached: 0,
+      completed: false,
+      q1: null, q2: null, q3: null, q4: null, q5: null,
+      archetype_scores: scores,
+      archetype: null,
+      archetype_confidence: 0,
+      prob_trail: [],
+      referral: REF_CODE
+    };
+
+    try {
+      const res = await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        leadId = data.id;
+        console.log('📝 Session created:', sessionId, 'ID:', leadId);
+      }
+    } catch (e) {
+      console.log('❌ Session creation failed:', e.message);
+    }
+  }
+
+  async function updateProgress() {
+    // Update session progress after each answer
+    if (!leadId) return;
+
+    const payload = {
+      id: leadId,
+      last_question_reached: qi + 1,
+      q1: answers.q1 || null,
+      q2: answers.q2 || null,
+      q3: answers.q3 || null,
+      q4: answers.q4 || null,
+      q5: answers.q5 || null,
+      archetype_scores: scores,
+      archetype: leader || null,
+      archetype_confidence: lead_p,
+      prob_trail: prob_trail,
+      cta_variant: leader || null
+    };
+
+    try {
+      await fetch('/api/session', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      console.log('📊 Progress updated: Q' + (qi + 1));
+    } catch (e) {
+      console.log('❌ Progress update failed:', e.message);
+    }
+  }
+
+  async function markCompleted() {
+    // Mark session as completed when reaching final screen
+    if (!leadId) return;
+
+    const payload = {
+      id: leadId,
+      completed: true,
+      messi_steps: parseInt($("num")?.textContent) || null
+    };
+
+    try {
+      await fetch('/api/session', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      console.log('✅ Session completed');
+    } catch (e) {
+      console.log('❌ Completion update failed:', e.message);
+    }
+  }
+
   function next(){
     console.log('🎯 User started quiz');
-    progressStep=1; setBar(); qi=0; renderQ(); show("s-q");
+    progressStep=1; setBar(); qi=0;
+    createSession(); // Create session when quiz starts
+    renderQ(); show("s-q");
   }
 
   function renderQ(){
@@ -793,6 +887,9 @@
     if (selectedOpt && selectedOpt.w) {
       addWeights(selectedOpt.w);
     }
+
+    // Update progress in database
+    updateProgress();
 
     progressStep = qi + 1; setBar();
 
@@ -916,6 +1013,9 @@
     console.log('🏁 User reached final screen');
     console.log(`🎯 Final archetype: ${leader} (${(lead_p*100).toFixed(1)}% confidence)`);
 
+    // Mark session as completed
+    markCompleted();
+
     // Preserve original Messi-distance calculation (§0 - unchanged)
     const n = teaserNumber();
 
@@ -1000,7 +1100,10 @@
       return false;
     }
 
+    // If we have a session, update it with contact info
+    // Otherwise create a new lead (fallback)
     const payload = {
+      id: leadId, // Will be null if no session
       contact,
       contact_type: /\S+@\S+\.\S+/.test(contact) ? "email" : "phone",
       // Legacy fields (keep for compatibility)
