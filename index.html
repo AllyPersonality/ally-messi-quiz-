@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿A cuántos pasos estás de Messi? — Ally</title>
-<!-- VERSION: 2026-07-02-archetype-v1 - Replaced questions with archetype-weighted set -->
+<!-- VERSION: 2026-07-02-archetype-v2 - Live scoring + tiebreaker -->
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
@@ -403,9 +403,104 @@
   const STEPS_TOTAL = QUESTIONS.length + 1; // questions + one final board (tiebreaker dynamic)
   let progressStep = 0;
 
+  // ---- Live scoring (§3) ----
+  let scores = {
+    architect: 0,
+    connector: 0,
+    accelerator: 0,
+    storyteller: 0,
+    strategist: 0,
+    anchor: 0,
+    explorer: 0,
+    commander: 0,
+    harmonizer: 0
+  };
+  let probabilities = {};       // current probability distribution
+  let leader = null;            // winning archetype
+  let lead_p = 0;               // probability of leader
+  let margin = 0;               // lead_p - second_highest
+  let prob_trail = [];          // probability snapshots after each question
+
   const $ = id => document.getElementById(id);
   function show(id){ document.querySelectorAll(".step").forEach(s=>s.classList.remove("on")); $(id).classList.add("on"); window.scrollTo({top:0}); }
   function setBar(){ $("bar").style.width = Math.round((progressStep/STEPS_TOTAL)*100) + "%"; }
+
+  // ---- Live scoring engine (§3) - runs after EVERY answer ----
+  function computeScores() {
+    // Recompute probabilities from current scores
+    const total = Object.values(scores).reduce((sum, val) => sum + val, 0);
+
+    if (total === 0) {
+      // No answers yet - all equal
+      probabilities = {};
+      ARCHETYPES.forEach(a => probabilities[a] = 1/9);
+      leader = null;
+      lead_p = 1/9;
+      margin = 0;
+    } else {
+      // Calculate probabilities
+      probabilities = {};
+      ARCHETYPES.forEach(a => {
+        probabilities[a] = scores[a] / total;
+      });
+
+      // Find leader and second
+      const sorted = ARCHETYPES.map(a => ({name: a, prob: probabilities[a]}))
+                               .sort((a, b) => b.prob - a.prob);
+
+      leader = sorted[0].name;
+      lead_p = sorted[0].prob;
+      const second_p = sorted[1].prob;
+      margin = lead_p - second_p;
+
+      console.log('📊 Scores:', scores);
+      console.log('📈 Probabilities:', probabilities);
+      console.log(`👑 Leader: ${leader} (${(lead_p*100).toFixed(1)}%, margin: ${(margin*100).toFixed(1)}%)`);
+    }
+
+    // Store snapshot for tuning
+    prob_trail.push({
+      question: qi + 1,
+      probabilities: {...probabilities},
+      leader: leader,
+      lead_p: lead_p,
+      margin: margin
+    });
+  }
+
+  function addWeights(weights) {
+    // Add answer's weights to scores
+    Object.keys(weights).forEach(archetype => {
+      scores[archetype] += weights[archetype];
+    });
+    computeScores();
+  }
+
+  function checkTiebreaker() {
+    // After Q5, check if we need tiebreaker (margin < 0.10)
+    if (qi === 4 && margin < 0.10) { // qi=4 is Q5 (0-indexed)
+      needsTiebreaker = true;
+
+      // Find top 2 archetypes
+      const sorted = ARCHETYPES.map(a => ({name: a, prob: probabilities[a]}))
+                               .sort((a, b) => b.prob - a.prob);
+      const top1 = sorted[0].name;
+      const top2 = sorted[1].name;
+
+      // Build tiebreaker key (alphabetical order)
+      const pair = [top1, top2].sort().join('-');
+      tiebreakerKey = pair;
+
+      // Check if we have a tiebreaker for this pair
+      if (!TIEBREAKERS[tiebreakerKey]) {
+        // No specific tiebreaker, use generic or skip
+        console.log(`⚠️ No tiebreaker for ${pair}, skipping`);
+        needsTiebreaker = false;
+      } else {
+        console.log(`🎯 Tiebreaker needed: ${tiebreakerKey}`);
+      }
+    }
+  }
 
   function next(){
     console.log('🎯 User started quiz');
@@ -413,6 +508,21 @@
   }
 
   function renderQ(){
+    // Check if this is the tiebreaker (Q6)
+    if (qi === 5 && needsTiebreaker && tiebreakerKey) {
+      const tb = TIEBREAKERS[tiebreakerKey];
+      const html = `
+        <div class="qnum">Pregunta final</div>
+        <h2>${tb.q}</h2>
+        <div class="opts">
+          ${tb.opts.map((o,i)=>`<button class="opt" onclick="pickTiebreaker('${o.v}')">
+              <span>${o.t}</span></button>`).join("")}
+        </div>`;
+      $("s-q").innerHTML = html;
+      return;
+    }
+
+    // Regular question (Q1-Q5)
     const item = QUESTIONS[qi];
     const html = `
       <div class="qnum">Pregunta ${qi+1} de ${QUESTIONS.length}</div>
@@ -427,12 +537,52 @@
   function pick(tag, val){
     answers[tag] = val;
     console.log(`✓ Answer saved: ${tag} = ${val}`, answers);
-    progressStep = qi + 1; setBar();
-    if (qi < QUESTIONS.length - 1){ qi++; setTimeout(()=>{ renderQ(); }, 120); }
-    else {
-      console.log('📊 Quiz complete! Final answers:', answers);
-      progressStep = STEPS_TOTAL; setBar(); show("s-final"); showFinal();
+
+    // Find the selected option and add its weights
+    const currentQ = QUESTIONS[qi];
+    const selectedOpt = currentQ.opts.find(o => o.v === val);
+    if (selectedOpt && selectedOpt.w) {
+      addWeights(selectedOpt.w);
     }
+
+    progressStep = qi + 1; setBar();
+
+    if (qi < QUESTIONS.length - 1) {
+      // More questions to go
+      qi++;
+      setTimeout(()=>{ renderQ(); }, 120);
+    } else {
+      // Finished Q5, check if tiebreaker needed
+      checkTiebreaker();
+
+      if (needsTiebreaker) {
+        // Show tiebreaker (Q6)
+        qi++;
+        console.log('🎯 Showing tiebreaker question');
+        setTimeout(()=>{ renderQ(); }, 120);
+      } else {
+        // Go to results
+        console.log('📊 Quiz complete! Final answers:', answers);
+        progressStep = STEPS_TOTAL; setBar(); show("s-final"); showFinal();
+      }
+    }
+  }
+
+  function pickTiebreaker(val) {
+    // Handle tiebreaker answer (similar to pick but for Q6)
+    answers.tiebreaker = val;
+    console.log(`✓ Tiebreaker answered: ${val}`);
+
+    // Find weights in the tiebreaker
+    const tb = TIEBREAKERS[tiebreakerKey];
+    const selectedOpt = tb.opts.find(o => o.v === val);
+    if (selectedOpt && selectedOpt.w) {
+      addWeights(selectedOpt.w);
+    }
+
+    // Now go to results
+    console.log('📊 Quiz complete (with tiebreaker)! Final answers:', answers);
+    progressStep = STEPS_TOTAL; setBar(); show("s-final"); showFinal();
   }
 
   let leadSaved = false;
