@@ -68,8 +68,19 @@
 
   <div class="kpis">
     <div class="kpi">
-      <div class="kpi-label">Total Leads</div>
-      <div class="kpi-val" id="k-leads">—</div>
+      <div class="kpi-label">Total Visitors</div>
+      <div class="kpi-val" id="k-visitors">—</div>
+      <div class="kpi-sub" id="k-visitors-sub">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Completed</div>
+      <div class="kpi-val" id="k-completed">—</div>
+      <div class="kpi-sub" id="k-completion-rate">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">With Contact</div>
+      <div class="kpi-val" id="k-contacts">—</div>
+      <div class="kpi-sub" id="k-contact-rate">—</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Email</div>
@@ -220,11 +231,20 @@
   function render(data){
     const {totals, daily, segments, latest} = data;
 
-    document.getElementById("k-leads").textContent = totals.leads.toLocaleString();
+    const visitors = totals.visitors || totals.leads || 0;
+    const completed = totals.completed || 0;
+    const withContact = totals.with_contact || 0;
+
+    document.getElementById("k-visitors").textContent = visitors.toLocaleString();
+    document.getElementById("k-visitors-sub").textContent = "started quiz";
+    document.getElementById("k-completed").textContent = completed.toLocaleString();
+    document.getElementById("k-completion-rate").textContent = pct(completed, visitors) + "% completion";
+    document.getElementById("k-contacts").textContent = withContact.toLocaleString();
+    document.getElementById("k-contact-rate").textContent = pct(withContact, completed) + "% of completed";
     document.getElementById("k-email").textContent = totals.email.toLocaleString();
-    document.getElementById("k-email-pct").textContent = pct(totals.email,totals.leads)+"% de los leads";
+    document.getElementById("k-email-pct").textContent = pct(totals.email, withContact)+"% of contacts";
     document.getElementById("k-phone").textContent = totals.phone.toLocaleString();
-    document.getElementById("k-phone-pct").textContent = pct(totals.phone,totals.leads)+"% de los leads";
+    document.getElementById("k-phone-pct").textContent = pct(totals.phone, withContact)+"% of contacts";
     document.getElementById("k-today").textContent = totals.today.toLocaleString();
     document.getElementById("k-ref").textContent = totals.referrals.toLocaleString();
 
@@ -234,18 +254,20 @@
     bars("goal-bars", segments.goal, LABELS.goal);
     bars("industry-bars", segments.industry, LABELS.industry);
 
-    document.getElementById("leads-count").textContent = totals.leads + " total · exportable to CSV";
+    document.getElementById("leads-count").textContent = visitors + " total visitors · " + completed + " completed · " + withContact + " with contact";
     const body = document.getElementById("leads-body");
-    if(!latest.length){ body.innerHTML = '<tr><td colspan="8" class="muted">No leads yet. Share the quiz link to start collecting.</td></tr>'; return; }
+    if(!latest.length){ body.innerHTML = '<tr><td colspan="10" class="muted">No visitors yet. Share the quiz link to start collecting.</td></tr>'; return; }
     body.innerHTML = latest.map(r=>{
+      const contactVal = r.contact || '<span class="muted">—</span>';
       const type = r.contact_type==="email"
         ? '<span class="pill email">email</span>'
-        : '<span class="pill phone">phone</span>';
-      const ref = r.referral_code ? '<span class="pill ref">'+esc(r.referral_code)+'</span>' : '<span class="muted">—</span>';
-      const g = (LABELS.goal[r.goal])||'<span class="muted">—</span>';
-      const ind = (LABELS.industry[r.industry])||'<span class="muted">—</span>';
-      const club = (LABELS.club[r.club])||'—';
-      return '<tr><td class="contact">'+esc(r.contact||'—')+'</td><td>'+type+'</td><td>'+g+'</td><td>'+ind+'</td><td class="muted">'+esc(club)+'</td><td>'+ref+'</td><td class="muted">'+timeAgo(r.created_at)+'</td><td><button class="btn-delete" data-id="'+r.id+'" onclick="deleteLead('+r.id+')">Delete</button></td></tr>';
+        : (r.contact_type==="phone" ? '<span class="pill phone">phone</span>' : '<span class="muted">—</span>');
+      const completedStatus = r.completed ? '<span class="pill email">✓</span>' : '<span class="muted">incomplete</span>';
+      const lastQ = r.last_question_reached || 0;
+      const archetype = r.archetype || '<span class="muted">—</span>';
+      const ref = (r.referral_code || r.referral) ? '<span class="pill ref">'+esc(r.referral_code || r.referral)+'</span>' : '<span class="muted">—</span>';
+      const timeVal = r.created_at || r.started_at;
+      return '<tr><td class="contact">'+contactVal+'</td><td>'+type+'</td><td>'+completedStatus+'</td><td>Q'+lastQ+'</td><td>'+archetype+'</td><td>'+ref+'</td><td class="muted">'+timeAgo(timeVal)+'</td><td><button class="btn-delete" data-id="'+r.id+'" onclick="deleteLead('+r.id+')">Delete</button></td></tr>';
     }).join("");
   }
 

@@ -97,11 +97,13 @@ app.get('/api/quiz-analytics', async (req, res) => {
     const now_date = new Date();
     const today = now_date.toISOString().split('T')[0];
 
-    const totalLeads = leads.length;
+    const totalVisitors = leads.length; // ALL rows (including incomplete)
+    const completedCount = leads.filter(l => l.completed === true).length;
+    const withContactCount = leads.filter(l => l.contact != null && l.contact !== '').length;
     const emailCount = leads.filter(l => l.contact_type === 'email').length;
     const phoneCount = leads.filter(l => l.contact_type === 'phone').length;
-    const todayCount = leads.filter(l => l.created_at?.startsWith(today)).length;
-    const referralCount = leads.filter(l => l.referral_code === 'ABOFRC').length;
+    const todayCount = leads.filter(l => l.created_at?.startsWith(today) || l.started_at?.startsWith(today)).length;
+    const referralCount = leads.filter(l => l.referral_code === 'ABOFRC' || l.referral === 'ABOFRC').length;
 
     // Per-day counts (last 14 days)
     const dailyCounts = {};
@@ -124,11 +126,15 @@ app.get('/api/quiz-analytics', async (req, res) => {
 
     const analytics = {
       totals: {
-        leads: totalLeads,
+        visitors: totalVisitors,
+        completed: completedCount,
+        with_contact: withContactCount,
         email: emailCount,
         phone: phoneCount,
         today: todayCount,
-        referrals: referralCount
+        referrals: referralCount,
+        // Legacy fields
+        leads: totalVisitors
       },
       daily: dailyCounts,
       segments: {
