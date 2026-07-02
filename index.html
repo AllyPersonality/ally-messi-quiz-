@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿A cuántos pasos estás de Messi? — Ally</title>
-<!-- VERSION: 2026-07-02-archetype-v2 - Live scoring + tiebreaker -->
+<!-- VERSION: 2026-07-02-archetype-v3 - Progressive personalization -->
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
@@ -219,7 +219,10 @@
     </section>
 
     <!-- QUESTIONS render here -->
-    <section class="step" id="s-q"></section>
+    <section class="step" id="s-q">
+      <!-- Transition message appears here after answers -->
+      <div id="transition-msg" style="display:none; margin-bottom:16px; padding:12px; background:rgba(52,196,255,.08); border:1px solid var(--celeste-deep); border-radius:10px; font-size:14px; text-align:center;"></div>
+    </section>
 
     <!-- FINAL BOARD: result + contact + download all visible together -->
     <section class="step" id="s-final">
@@ -355,6 +358,136 @@
   // ---- Archetype names (internal only, never shown to user) ----
   const ARCHETYPES = ['architect', 'connector', 'accelerator', 'storyteller', 'strategist', 'anchor', 'explorer', 'commander', 'harmonizer'];
 
+  // ---- Archetype voices for progressive personalization (§1 + §4) ----
+  const VOICES = {
+    architect: {
+      trigger: ['confiable', 'correcto', 'bien hecho', 'proceso', 'estructura'],
+      avoid: ['mágico', 'secreto', 'instantáneo', 'confiá nomás'],
+      transitions: {
+        tint: 'Perfecto, seguimos 👇',
+        lean: 'Bien hecho. Dale, siguiente 👇',
+        full: 'Correcto. Una más y te muestro el resultado preciso 👇'
+      },
+      cta: {
+        tint: 'Ally te muestra el camino confiable.',
+        lean: 'Ally te muestra el camino más confiable hasta la persona correcta.',
+        full: 'Ally te muestra el camino más confiable hasta la persona correcta, no el más rápido. Bajala y hacelo bien de una.'
+      }
+    },
+    connector: {
+      trigger: ['ayudar', 'conectar', 'juntos', 'comunidad', 'presentar'],
+      avoid: ['ganar', 'dominar', 'explotar', 'número'],
+      transitions: {
+        tint: 'Buenísimo, vamos con la siguiente 👇',
+        lean: 'Genial, una más y vemos quién está cerca tuyo 👇',
+        full: 'Perfecto. Última pregunta y te muestro quién puede ayudarte a llegar 👇'
+      },
+      cta: {
+        tint: 'Con Ally conectás a quien importa.',
+        lean: 'Con Ally seguís cerca de los que importan.',
+        full: 'Con Ally seguís cerca de los que importan y presentás a los que se necesitan. Bajala y empezá a conectar gente.'
+      }
+    },
+    accelerator: {
+      trigger: ['rápido', 'avanzar', 'resultados', 'siguiente paso', 'momentum'],
+      avoid: ['despacio', 'esperá', 'algún día', 'pasivo'],
+      transitions: {
+        tint: 'Buenísimo, vamos con la que sigue 👇',
+        lean: 'Vas rápido 💪 Dale, una más 👇',
+        full: 'Estás on fire 🔥 Última y te muestro qué tan cerca estás de Messi.'
+      },
+      cta: {
+        tint: 'Con Ally llegás más rápido.',
+        lean: 'Ally te muestra el camino más corto. No esperes.',
+        full: 'Ally te muestra el camino más corto hasta donde querés llegar. No esperes más.'
+      }
+    },
+    storyteller: {
+      trigger: ['auténtico', 'real', 'de verdad', 'sentido', 'historia'],
+      avoid: ['todos', 'promedio', 'genérico', 'viral', 'escala'],
+      transitions: {
+        tint: 'Bueno, seguimos 👇',
+        lean: 'Interesante. Una más y vemos tu mapa 👇',
+        full: 'Última pregunta. Después te muestro quién está realmente cerca 👇'
+      },
+      cta: {
+        tint: 'Ally te ayuda a encontrar gente real.',
+        lean: 'Ally te ayuda a encontrar gente que te entienda.',
+        full: 'Ally no te da más contactos: te ayuda a encontrar gente que te entienda de verdad.'
+      }
+    },
+    strategist: {
+      trigger: ['entender', 'patrón', 'mapa', 'lógica', 'claridad'],
+      avoid: ['confiá', 'mágico', 'instantáneo', 'revolucionario'],
+      transitions: {
+        tint: 'Perfecto, seguimos 👇',
+        lean: 'Claro. Una más y te muestro el patrón 👇',
+        full: 'Última pregunta. Después te muestro cómo se conecta tu red real 👇'
+      },
+      cta: {
+        tint: 'Ally te muestra cómo se conecta tu red.',
+        lean: 'Ally te muestra el mapa que nadie más ve.',
+        full: 'Ally te muestra cómo se conecta realmente tu red, el mapa que nadie más ve.'
+      }
+    },
+    anchor: {
+      trigger: ['confiable', 'seguro', 'preparado', 'probado'],
+      avoid: ['garantizado', 'YOLO', 'arriesgá', 'jugátela'],
+      transitions: {
+        tint: 'Perfecto, seguimos 👇',
+        lean: 'Bien. Una más y te muestro tu red 👇',
+        full: 'Última pregunta. Después te muestro quién ya confía en vos 👇'
+      },
+      cta: {
+        tint: 'En Ally llegás con gente que ya te conoce.',
+        lean: 'En Ally cada camino arranca con alguien que confía en vos.',
+        full: 'En Ally cada camino arranca con alguien que ya confía en vos. Nunca llegás solo.'
+      }
+    },
+    explorer: {
+      trigger: ['descubrir', 'nuevo', 'posibilidad', 'oportunidad', 'libertad'],
+      avoid: ['rutina', 'limitado', 'solo', 'imposible', 'tarde'],
+      transitions: {
+        tint: 'Buenísimo, seguimos 👇',
+        lean: 'Dale, una más y te muestro qué hay cerca 👇',
+        full: 'Última y te muestro qué oportunidades están más cerca de lo que pensás 👇'
+      },
+      cta: {
+        tint: 'Ally te muestra nuevas posibilidades.',
+        lean: 'Con Ally descubrís quién está más cerca.',
+        full: 'La persona que puede cambiar tu próximo capítulo está más cerca de lo que pensás.'
+      }
+    },
+    commander: {
+      trigger: ['control', 'decidir', 'acción', 'liderazgo', 'directo'],
+      avoid: ['por favor', 'tal vez', 'esperemos', 'intentamos'],
+      transitions: {
+        tint: 'Perfecto, seguimos 👇',
+        lean: 'Bien. Siguiente 👇',
+        full: 'Última. Después vos decidís el próximo paso 👇'
+      },
+      cta: {
+        tint: 'Ally te muestra a quién podés llegar.',
+        lean: 'Ally te muestra exactamente a quién podés llegar.',
+        full: 'Ally te muestra exactamente a quién podés llegar. Vos decidís el próximo paso.'
+      }
+    },
+    harmonizer: {
+      trigger: ['fácil', 'simple', 'calma', 'sin dramas', 'que fluya'],
+      avoid: ['dominar', 'ganar', 'apurate', 'pelear', 'presión'],
+      transitions: {
+        tint: 'Buenísimo, seguimos 👇',
+        lean: 'Tranqui, una más 👇',
+        full: 'Última pregunta. Sin apuro 👇'
+      },
+      cta: {
+        tint: 'Ally conecta sin complicaciones.',
+        lean: 'Ally conecta a la gente indicada sin estrés.',
+        full: 'Ally conecta a la gente indicada sin estrés y sin vueltas. Que todo fluya.'
+      }
+    }
+  };
+
   // ---- Tiebreaker questions (§2 - only if top2 within 0.10 after Q5) ----
   const TIEBREAKERS = {
     'accelerator-commander': {
@@ -421,6 +554,11 @@
   let margin = 0;               // lead_p - second_highest
   let prob_trail = [];          // probability snapshots after each question
 
+  // ---- Progressive personalization (§4) ----
+  let currentStage = 0;         // 0=neutral, 1=tint, 2=lean, 3=full
+  let prevLeader = null;        // track leader changes for stability rule
+  let stageHistory = [];        // track stage progression for logging
+
   const $ = id => document.getElementById(id);
   function show(id){ document.querySelectorAll(".step").forEach(s=>s.classList.remove("on")); $(id).classList.add("on"); window.scrollTo({top:0}); }
   function setBar(){ $("bar").style.width = Math.round((progressStep/STEPS_TOTAL)*100) + "%"; }
@@ -466,6 +604,9 @@
       lead_p: lead_p,
       margin: margin
     });
+
+    // Calculate personalization stage
+    calculateStage();
   }
 
   function addWeights(weights) {
@@ -500,6 +641,85 @@
         console.log(`🎯 Tiebreaker needed: ${tiebreakerKey}`);
       }
     }
+  }
+
+  // ---- Progressive personalization stage calculation (§4) ----
+  function calculateStage() {
+    // Determine intensity stage based on lead_p and margin
+    let targetStage = 0;
+
+    if (lead_p < 0.45 || margin < 0.10) {
+      targetStage = 0; // Neutral
+    } else if (lead_p >= 0.45 && lead_p < 0.60 && margin >= 0.10) {
+      targetStage = 1; // Tint
+    } else if (lead_p >= 0.60 && lead_p < 0.78) {
+      targetStage = 2; // Lean
+    } else if (lead_p >= 0.78) {
+      targetStage = 3; // Full
+    }
+
+    // Apply stability rule (§4)
+    let newStage = currentStage;
+
+    // Check if leader changed
+    if (prevLeader && leader !== prevLeader) {
+      // Leader changed - drop one stage
+      newStage = Math.max(0, currentStage - 1);
+      console.log(`⚠️ Leader changed from ${prevLeader} to ${leader}, dropping to stage ${newStage}`);
+    } else {
+      // Same leader or first time - can rise max 1 stage
+      newStage = Math.min(targetStage, currentStage + 1);
+    }
+
+    currentStage = newStage;
+    prevLeader = leader;
+
+    stageHistory.push({
+      question: qi + 1,
+      leader: leader,
+      lead_p: lead_p,
+      margin: margin,
+      targetStage: targetStage,
+      actualStage: currentStage
+    });
+
+    console.log(`🎭 Personalization: Stage ${currentStage} (target: ${targetStage}), leader: ${leader}`);
+  }
+
+  function getTransition() {
+    // Get transition text based on current stage and leader
+    if (currentStage === 0 || !leader || !VOICES[leader]) {
+      return 'Perfecto. Seguimos 👇'; // Neutral
+    }
+
+    const voice = VOICES[leader];
+    if (currentStage === 1 && voice.transitions.tint) {
+      return voice.transitions.tint;
+    } else if (currentStage === 2 && voice.transitions.lean) {
+      return voice.transitions.lean;
+    } else if (currentStage === 3 && voice.transitions.full) {
+      return voice.transitions.full;
+    }
+
+    return 'Perfecto. Seguimos 👇'; // Fallback
+  }
+
+  function getRunningCTA() {
+    // Get running CTA hint based on current stage and leader
+    if (currentStage === 0 || !leader || !VOICES[leader]) {
+      return 'Bajate Ally y encontrá a quien necesitás.'; // Neutral
+    }
+
+    const voice = VOICES[leader];
+    if (currentStage === 1 && voice.cta.tint) {
+      return voice.cta.tint;
+    } else if (currentStage === 2 && voice.cta.lean) {
+      return voice.cta.lean;
+    } else if (currentStage === 3 && voice.cta.full) {
+      return voice.cta.full;
+    }
+
+    return 'Bajate Ally y encontrá a quien necesitás.'; // Fallback
   }
 
   function next(){
@@ -547,10 +767,21 @@
 
     progressStep = qi + 1; setBar();
 
+    // Show transition message briefly (personalized)
+    const transitionText = getTransition();
+    const transMsg = document.getElementById('transition-msg');
+    if (transMsg) {
+      transMsg.textContent = transitionText;
+      transMsg.style.display = 'block';
+    }
+
     if (qi < QUESTIONS.length - 1) {
       // More questions to go
       qi++;
-      setTimeout(()=>{ renderQ(); }, 120);
+      setTimeout(()=>{
+        if (transMsg) transMsg.style.display = 'none';
+        renderQ();
+      }, 800); // Brief pause to show transition
     } else {
       // Finished Q5, check if tiebreaker needed
       checkTiebreaker();
@@ -559,11 +790,16 @@
         // Show tiebreaker (Q6)
         qi++;
         console.log('🎯 Showing tiebreaker question');
-        setTimeout(()=>{ renderQ(); }, 120);
+        setTimeout(()=>{
+          if (transMsg) transMsg.style.display = 'none';
+          renderQ();
+        }, 800);
       } else {
         // Go to results
         console.log('📊 Quiz complete! Final answers:', answers);
-        progressStep = STEPS_TOTAL; setBar(); show("s-final"); showFinal();
+        setTimeout(()=>{
+          progressStep = STEPS_TOTAL; setBar(); show("s-final"); showFinal();
+        }, 800);
       }
     }
   }
