@@ -205,7 +205,15 @@ app.post('/api/lead', async (req, res) => {
   console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
 
   try {
-    const { contact, contact_type, goal, industry, club, behavior, dream, degree_estimate, referral_code } = req.body;
+    const {
+      contact, contact_type,
+      goal, industry, club, behavior, dream, degree_estimate, referral_code,
+      // New archetype fields (§6)
+      q1, q2, q3, q4, q5,
+      archetype_scores, archetype, archetype_confidence,
+      prob_trail, cta_variant, messi_steps, referral,
+      last_question_reached, completed, downloaded
+    } = req.body;
 
     // Validate required fields
     if (!contact || !contact_type) {
@@ -214,6 +222,7 @@ app.post('/api/lead', async (req, res) => {
     }
 
     console.log('✅ Validation passed');
+    console.log(`🎯 Archetype: ${archetype} (${(archetype_confidence*100).toFixed(1)}%)`);
     console.log('💾 Inserting into Supabase quiz_leads table...');
 
     const { data, error } = await supabase
@@ -221,13 +230,26 @@ app.post('/api/lead', async (req, res) => {
       .insert([{
         contact,
         contact_type,
+        // Legacy fields
         goal,
         industry,
         club,
         behavior,
         dream,
         degree_estimate,
-        referral_code
+        referral_code,
+        // New archetype fields
+        q1, q2, q3, q4, q5,
+        archetype_scores,
+        archetype,
+        archetype_confidence,
+        prob_trail,
+        cta_variant,
+        messi_steps,
+        referral,
+        last_question_reached,
+        completed,
+        downloaded
       }])
       .select();
 

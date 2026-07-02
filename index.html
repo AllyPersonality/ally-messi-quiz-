@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿A cuántos pasos estás de Messi? — Ally</title>
-<!-- VERSION: 2026-07-02-archetype-v3 - Progressive personalization -->
+<!-- VERSION: 2026-07-02-archetype-v4-COMPLETE - Result screen + database -->
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
@@ -233,12 +233,16 @@
         <div class="link"></div><div class="gap">?</div><div class="link"></div>
         <div class="node"><div class="pic messi">10</div><small>Messi</small></div>
       </div>
-      <div class="card-soft">
-        <p>Ojo: este número es un <b>estimado</b>. Tu red todavía está vacía, así que el camino real aún no existe. <span class="tag" id="seg-line"></span></p>
-      </div>
+      <!-- Share button for Messi result (§5) -->
+      <button class="share-btn" onclick="shareMessi()" style="margin-top:18px; width:100%; cursor:pointer; font-family:inherit; background:rgba(52,196,255,.12); color:var(--celeste); border:1px solid var(--celeste-deep); border-radius:14px; padding:14px; font-size:15px; font-weight:700; transition:all .12s;">
+        Compartir mi resultado 📲
+      </button>
 
-      <div class="how-to-close">
-        <p><strong>¿Cómo cerrás la brecha con Messi?</strong> Encontrás a estas personas construyendo tu red real en Ally. Descargá la app, registrate con el código <strong>ABOFRC</strong>, y sumá a la gente que conocés. Cada conexión abre nuevos caminos hacia quién quieras conocer.</p>
+      <!-- Personalized download CTA (§5 - invisible archetype drives this) -->
+      <div class="how-to-close" style="margin-top:18px;">
+        <p id="personalized-cta" style="font-size:15px; line-height:1.6;">
+          <strong>Cargando tu recomendación...</strong>
+        </p>
       </div>
 
       <div class="steps3">
@@ -722,6 +726,31 @@
     return 'Bajate Ally y encontrá a quien necesitás.'; // Fallback
   }
 
+  // ---- Personalized download CTA by archetype (§5) ----
+  function getDownloadCTA() {
+    // Get full download CTA for result screen based on winning archetype
+    const messiNumber = parseInt($("num")?.textContent) || 5;
+
+    if (lead_p < 0.45 || !leader) {
+      // Neutral fallback
+      return `Messi está a ${messiNumber} pasos. El resto de la gente que necesitás, también. Bajate Ally.`;
+    }
+
+    const ctas = {
+      architect: "Ally te muestra el camino más confiable hasta la persona correcta, no el más rápido. Bajala y hacelo bien de una.",
+      connector: "Con Ally seguís cerca de los que importan y presentás a los que se necesitan. Bajala y empezá a conectar gente.",
+      accelerator: "Ally te muestra el camino más corto hasta donde querés llegar. No esperes más.",
+      storyteller: "Ally no te da más contactos: te ayuda a encontrar gente que te entienda de verdad.",
+      strategist: "Ally te muestra cómo se conecta realmente tu red, el mapa que nadie más ve.",
+      anchor: "En Ally cada camino arranca con alguien que ya confía en vos. Nunca llegás solo.",
+      explorer: "La persona que puede cambiar tu próximo capítulo está más cerca de lo que pensás.",
+      commander: "Ally te muestra exactamente a quién podés llegar. Vos decidís el próximo paso.",
+      harmonizer: "Ally conecta a la gente indicada sin estrés y sin vueltas. Que todo fluya."
+    };
+
+    return ctas[leader] || ctas.accelerator; // Default to accelerator if leader not found
+  }
+
   function next(){
     console.log('🎯 User started quiz');
     progressStep=1; setBar(); qi=0; renderQ(); show("s-q");
@@ -885,11 +914,60 @@
 
   function showFinal(){
     console.log('🏁 User reached final screen');
+    console.log(`🎯 Final archetype: ${leader} (${(lead_p*100).toFixed(1)}% confidence)`);
+
+    // Preserve original Messi-distance calculation (§0 - unchanged)
     const n = teaserNumber();
-    $("seg-line").textContent = SEG_COPY[answers.goal] || SEG_COPY.social;
+
     // count-up animation in place
     let cur = 10; const target = n; const el = $("num");
     const t = setInterval(()=>{ cur--; el.textContent = cur; if(cur<=target) clearInterval(t); }, 80);
+
+    // Update personalized download CTA (§5)
+    setTimeout(()=>{
+      const ctaText = getDownloadCTA();
+      const ctaEl = $("personalized-cta");
+      if (ctaEl) {
+        ctaEl.textContent = ctaText;
+      }
+      console.log(`💬 CTA variant: ${leader || 'neutral'}`);
+    }, 1000); // Wait for animation to finish
+  }
+
+  function shareMessi() {
+    // Share Messi result (§5 - visible reward, archetype stays invisible)
+    const messiNumber = parseInt($("num")?.textContent) || 5;
+    const shareText = `¡Estoy a ${messiNumber} pasos de Messi! ⚽ ¿Y vos? Hacé el quiz: https://ally-messi-quiz-production.up.railway.app/`;
+
+    if (navigator.share) {
+      // Native share API (mobile)
+      navigator.share({
+        title: '¿A cuántos pasos estás de Messi?',
+        text: shareText,
+        url: 'https://ally-messi-quiz-production.up.railway.app/'
+      }).then(() => {
+        console.log('✅ Shared successfully');
+      }).catch((err) => {
+        console.log('❌ Share failed:', err);
+        fallbackShare(shareText);
+      });
+    } else {
+      // Fallback - copy to clipboard
+      fallbackShare(shareText);
+    }
+  }
+
+  function fallbackShare(text) {
+    navigator.clipboard?.writeText(text).then(() => {
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = "✓ Copiado al portapapeles";
+      setTimeout(() => {
+        btn.textContent = originalText;
+      }, 2000);
+    }).catch(() => {
+      alert(text);
+    });
   }
 
   async function downloadApp(){
@@ -925,13 +1003,28 @@
     const payload = {
       contact,
       contact_type: /\S+@\S+\.\S+/.test(contact) ? "email" : "phone",
-      goal: answers.goal || null,
-      industry: answers.industry || null,
-      club: answers.club || null,
-      behavior: answers.behavior || null,
-      dream: answers.dream || null,
-      degree_estimate: parseInt($("num").textContent) || null,
-      referral_code: REF_CODE
+      // Legacy fields (keep for compatibility)
+      goal: answers.q2 || null,
+      industry: null,
+      club: null,
+      behavior: answers.q3 || null,
+      dream: answers.q5 || null,
+      // New archetype fields (§6)
+      q1: answers.q1 || null,
+      q2: answers.q2 || null,
+      q3: answers.q3 || null,
+      q4: answers.q4 || null,
+      q5: answers.q5 || null,
+      archetype_scores: scores,
+      archetype: leader || 'neutral',
+      archetype_confidence: lead_p,
+      prob_trail: prob_trail,
+      cta_variant: leader || 'neutral',
+      messi_steps: parseInt($("num").textContent) || null,
+      referral: REF_CODE,
+      last_question_reached: qi + 1,
+      completed: true,
+      downloaded: false
     };
 
     console.log('📦 Payload to send:', JSON.stringify(payload, null, 2));
