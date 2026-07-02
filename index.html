@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>¿A cuántos pasos estás de Messi? — Ally</title>
-<!-- VERSION: 2026-07-01-v3 - Fixed scrolling on final screen -->
+<!-- VERSION: 2026-07-02-archetype-v1 - Replaced questions with archetype-weighted set -->
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
@@ -273,61 +273,134 @@
 </div>
 
 <script>
-  // ---- Quiz definition. Each option carries a segment tag. ----
+  // ---- Archetype-weighted questions (§2) ----
   const QUESTIONS = [
     {
-      tag:"club", q:"Para arrancar: ¿de qué cuadro sos?",
+      tag:"q1", q:"Arranquemos fácil: si pudieras ser cualquier jugador en la cancha, ¿cuál serías?",
       opts:[
-        {t:"Boca", v:"boca", ic:"🔵"},
-        {t:"River", v:"river", ic:"⚪"},
-        {t:"Otro de Primera", v:"otro", ic:"⚽"},
-        {t:"No soy mucho de fútbol (pero amo a Messi)", v:"none", ic:"🐐"},
+        {t:"El 9 que mete todos los goles", v:"striker", ic:"⚽",
+         w:{architect:0, connector:0, accelerator:3, storyteller:0, strategist:0, anchor:0, explorer:0, commander:1, harmonizer:0}},
+        {t:"El 10 que inventa las jugadas", v:"playmaker", ic:"✨",
+         w:{architect:0, connector:0, accelerator:0, storyteller:2, strategist:1, anchor:0, explorer:0, commander:0, harmonizer:0}},
+        {t:"El capitán que ordena al equipo", v:"captain", ic:"🔰",
+         w:{architect:1, connector:0, accelerator:0, storyteller:0, strategist:0, anchor:0, explorer:0, commander:3, harmonizer:0}},
+        {t:"El arquero, el último que falla", v:"keeper", ic:"🧤",
+         w:{architect:0, connector:0, accelerator:0, storyteller:0, strategist:0, anchor:3, explorer:0, commander:0, harmonizer:0}},
+        {t:"El que la rompe con una gambeta inesperada", v:"dribbler", ic:"🌟",
+         w:{architect:0, connector:0, accelerator:0, storyteller:1, strategist:0, anchor:0, explorer:2, commander:0, harmonizer:0}},
       ]
     },
     {
-      tag:"goal", q:"¿Para qué te sirven más tus contactos?",
+      tag:"q2", q:"¿Para qué querés usar tus contactos?",
       opts:[
-        {t:"Buscar trabajo / cambiar de laburo", v:"job", ic:"💼"},
-        {t:"Vender y conseguir clientes", v:"sales", ic:"📈"},
-        {t:"Contratar y armar equipos", v:"hiring", ic:"🧩"},
-        {t:"Conocer gente nueva, sin más", v:"social", ic:"✨"},
+        {t:"Conseguir laburo o cambiar de trabajo", v:"job", ic:"💼",
+         w:{architect:0, connector:0, accelerator:2, storyteller:0, strategist:0, anchor:1, explorer:0, commander:0, harmonizer:0}},
+        {t:"Vender y sumar clientes", v:"sales", ic:"📈",
+         w:{architect:0, connector:0, accelerator:2, storyteller:0, strategist:0, anchor:0, explorer:0, commander:1, harmonizer:0}},
+        {t:"Armar equipo / contratar", v:"hiring", ic:"🧩",
+         w:{architect:1, connector:0, accelerator:0, storyteller:0, strategist:0, anchor:0, explorer:0, commander:2, harmonizer:0}},
+        {t:"Ayudar a otros a conectar", v:"help", ic:"🤝",
+         w:{architect:0, connector:3, accelerator:0, storyteller:0, strategist:0, anchor:0, explorer:0, commander:0, harmonizer:1}},
+        {t:"Conocer gente nueva, sin más", v:"social", ic:"✨",
+         w:{architect:0, connector:1, accelerator:0, storyteller:0, strategist:0, anchor:0, explorer:2, commander:0, harmonizer:0}},
       ]
     },
     {
-      tag:"industry", q:"¿En qué mundo te movés?",
+      tag:"q3", q:"Cuando necesitás llegar a alguien que no conocés, ¿qué hacés?",
       opts:[
-        {t:"Tecnología / startups", v:"tech", ic:"💻"},
-        {t:"Negocios / finanzas", v:"biz", ic:"📊"},
-        {t:"Creativo / medios", v:"creative", ic:"🎨"},
-        {t:"Oficios / comercio", v:"trade", ic:"🛠️"},
-        {t:"Estudiante", v:"student", ic:"🎓"},
+        {t:"Le pregunto a alguien que me presente", v:"warm", ic:"🤝",
+         w:{architect:0, connector:2, accelerator:0, storyteller:0, strategist:0, anchor:2, explorer:0, commander:0, harmonizer:0}},
+        {t:"Mando mensaje en frío, directo", v:"cold", ic:"📨",
+         w:{architect:0, connector:0, accelerator:1, storyteller:0, strategist:0, anchor:0, explorer:0, commander:3, harmonizer:0}},
+        {t:"Me cuesta, no sé por dónde empezar", v:"stuck", ic:"🤷",
+         w:{architect:0, connector:0, accelerator:0, storyteller:1, strategist:0, anchor:2, explorer:0, commander:0, harmonizer:0}},
+        {t:"Soy un nodo, tengo contacto para todo", v:"hub", ic:"🌐",
+         w:{architect:0, connector:3, accelerator:0, storyteller:0, strategist:0, anchor:0, explorer:0, commander:0, harmonizer:1}},
+        {t:"Investigo todo sobre la persona primero", v:"research", ic:"🔍",
+         w:{architect:0, connector:0, accelerator:0, storyteller:0, strategist:3, anchor:0, explorer:0, commander:0, harmonizer:0}},
       ]
     },
     {
-      tag:"behavior", q:"Cuando necesitás llegar a alguien que no conocés, ¿qué hacés?",
+      tag:"q4", q:"¿Qué es lo que más valorás de una buena conexión?",
       opts:[
-        {t:"Le pregunto a un conocido que pueda presentarme", v:"warm", ic:"🤝"},
-        {t:"Mando mensaje en frío por LinkedIn / IG", v:"cold", ic:"📨"},
-        {t:"Me cuesta, no sé por dónde empezar", v:"stuck", ic:"🤷"},
-        {t:"Tengo contacto para todo, soy un nodo", v:"hub", ic:"🌐"},
+        {t:"Que sea de fiar y haga las cosas bien", v:"reliable", ic:"✔️",
+         w:{architect:2, connector:0, accelerator:0, storyteller:0, strategist:0, anchor:2, explorer:0, commander:0, harmonizer:0}},
+        {t:"Que fluya, buena onda, sin dramas", v:"flow", ic:"😊",
+         w:{architect:0, connector:0, accelerator:0, storyteller:0, strategist:0, anchor:0, explorer:0, commander:0, harmonizer:3}},
+        {t:"Que me haga crecer o me abra puertas", v:"growth", ic:"🚀",
+         w:{architect:0, connector:0, accelerator:2, storyteller:0, strategist:0, anchor:0, explorer:0, commander:1, harmonizer:0}},
+        {t:"Que sea auténtica, que conectemos de verdad", v:"authentic", ic:"💫",
+         w:{architect:0, connector:1, accelerator:0, storyteller:3, strategist:0, anchor:0, explorer:0, commander:0, harmonizer:0}},
+        {t:"Que me haga descubrir cosas nuevas", v:"discovery", ic:"🔭",
+         w:{architect:0, connector:0, accelerator:0, storyteller:0, strategist:1, anchor:0, explorer:2, commander:0, harmonizer:0}},
       ]
     },
     {
-      tag:"dream", q:"Si pudieras tomar un café con cualquiera, ¿con quién?",
+      tag:"q5", q:"Si pudieras tomar un café con cualquiera, ¿con quién?",
       opts:[
-        {t:"Un CEO o fundador que admiro", v:"founder", ic:"👔"},
-        {t:"Un crack del deporte", v:"athlete", ic:"🏆"},
-        {t:"Un artista o referente cultural", v:"artist", ic:"🎤"},
-        {t:"Messi, obvio", v:"messi", ic:"🐐"},
+        {t:"Un CEO o fundador que admiro", v:"founder", ic:"👔",
+         w:{architect:0, connector:0, accelerator:2, storyteller:0, strategist:0, anchor:0, explorer:0, commander:1, harmonizer:0}},
+        {t:"Un crack del deporte", v:"athlete", ic:"🏆",
+         w:{architect:0, connector:0, accelerator:1, storyteller:0, strategist:0, anchor:0, explorer:1, commander:0, harmonizer:0}},
+        {t:"Un artista o referente cultural", v:"artist", ic:"🎤",
+         w:{architect:0, connector:0, accelerator:0, storyteller:3, strategist:0, anchor:0, explorer:0, commander:0, harmonizer:0}},
+        {t:"Alguien que cambió su comunidad", v:"community", ic:"🌍",
+         w:{architect:0, connector:2, accelerator:0, storyteller:0, strategist:0, anchor:0, explorer:0, commander:0, harmonizer:1}},
+        {t:"Messi, obvio 🐐", v:"messi", ic:"🐐",
+         w:{architect:0, connector:0, accelerator:0, storyteller:0, strategist:0, anchor:0, explorer:0, commander:0, harmonizer:1}},
       ]
     },
   ];
 
-  const answers = {};           // segment tags collected here
+  // ---- Archetype names (internal only, never shown to user) ----
+  const ARCHETYPES = ['architect', 'connector', 'accelerator', 'storyteller', 'strategist', 'anchor', 'explorer', 'commander', 'harmonizer'];
+
+  // ---- Tiebreaker questions (§2 - only if top2 within 0.10 after Q5) ----
+  const TIEBREAKERS = {
+    'accelerator-commander': {
+      q: "Última, para desempatar: ¿qué te molesta más?",
+      opts: [
+        {t:"Que una oportunidad se me escape por dudar", v:"accel", w:{accelerator:3}},
+        {t:"Tener que pedir permiso para avanzar", v:"comm", w:{commander:3}}
+      ]
+    },
+    'connector-harmonizer': {
+      q: "Última: ¿qué preferís?",
+      opts: [
+        {t:"Presentar gente que se necesita", v:"conn", w:{connector:3}},
+        {t:"Que todos estén bien, sin conflictos", v:"harm", w:{harmonizer:3}}
+      ]
+    },
+    'architect-anchor': {
+      q: "Última: ¿qué te importa más?",
+      opts: [
+        {t:"Que esté bien hecho", v:"arch", w:{architect:3}},
+        {t:"Que sea confiable", v:"anch", w:{anchor:3}}
+      ]
+    },
+    'storyteller-strategist': {
+      q: "Última: ¿qué buscás?",
+      opts: [
+        {t:"Conectar con alguien de verdad", v:"story", w:{storyteller:3}},
+        {t:"Entender cómo funciona la red", v:"strat", w:{strategist:3}}
+      ]
+    },
+    'accelerator-explorer': {
+      q: "Última: ¿qué te motiva más?",
+      opts: [
+        {t:"Llegar rápido a mi objetivo", v:"accel", w:{accelerator:3}},
+        {t:"Descubrir qué más hay afuera", v:"expl", w:{explorer:3}}
+      ]
+    }
+  };
+
+  const answers = {};           // stores user's answer values
   const APP_URL = "https://play.google.com/store/apps/details?id=com.myapp.ally&hl=en";
   const REF_CODE = "ABOFRC";
   let qi = 0;                   // current question index
-  const STEPS_TOTAL = QUESTIONS.length + 1; // questions + one final board
+  let needsTiebreaker = false;  // set after Q5 if margin < 0.10
+  let tiebreakerKey = null;     // which tiebreaker to show
+  const STEPS_TOTAL = QUESTIONS.length + 1; // questions + one final board (tiebreaker dynamic)
   let progressStep = 0;
 
   const $ = id => document.getElementById(id);
